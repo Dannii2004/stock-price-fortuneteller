@@ -1,0 +1,50 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+
+def stock_price_prediction(stock_symbol, prediction_period):
+    # Load historical stock price data
+    df_stock_unique = pd.read_csv('historical_stock_data.csv')
+
+    # Preprocess data and engineer features
+    # For simplicity, we'll use only the 'Close' price as the feature
+    X_unique = df_stock_unique[['Close']].values
+    y_unique = df_stock_unique['Close'].shift(-1).fillna(method='ffill').values
+
+    # Split data into training and testing sets
+    X_train_unique, X_test_unique, y_train_unique, y_test_unique = train_test_split(X_unique, y_unique, test_size=0.2, random_state=42)
+
+    # Initialize and train linear regression model
+    model_unique = LinearRegression()
+    model_unique.fit(X_train_unique, y_train_unique)
+
+    # Make predictions for the specified prediction period
+    prediction_values_unique = df_stock_unique[['Close']].tail(1).values.flatten()
+    for _ in range(prediction_period):
+        next_day_prediction_unique = model_unique.predict(prediction_values_unique.reshape(-1, 1))
+        prediction_values_unique = np.append(prediction_values_unique, next_day_prediction_unique)
+
+    # Plot historical and predicted stock prices
+    plt.figure(figsize=(10, 6))
+    plt.plot(df_stock_unique.index, df_stock_unique['Close'], label='Historical Prices')
+    plt.plot(range(len(df_stock_unique), len(df_stock_unique) + prediction_period), prediction_values_unique[1:], label='Predicted Prices')
+    plt.xlabel('Days')
+    plt.ylabel('Stock Price')
+    plt.title(f'Stock Price Prediction for {stock_symbol}')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('stock_price_prediction_plot.png')
+    plt.show()
+
+    # Return predictions for further analysis or display
+    return prediction_values_unique[1:]
+
+if __name__ == "__main__":
+    stock_symbol_input_unique = input("Enter the stock symbol (e.g., AAPL): ")
+    prediction_period_input_unique = int(input("Enter the prediction period (in days): "))
+
+    predictions_result_unique = stock_price_prediction(stock_symbol_input_unique, prediction_period_input_unique)
+    print("Predictions:")
+    print(predictions_result_unique)
